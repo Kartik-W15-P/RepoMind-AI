@@ -16,7 +16,7 @@ print(result)
 print("\nAsking question...\n")
 
 answer, sources = ask_repository(
-    "What is RepoMind AI and what does the application do?"
+    "What is the application called?"
 )
 
 print("Answer:")

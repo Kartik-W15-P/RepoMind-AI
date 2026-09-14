@@ -1,8 +1,17 @@
-from pathlib import Path
+from app.rag.embeddings import (
+    load_embedding_model,
+    generate_embedding,
+)
 
-from app.rag.embeddings import load_embedding_model, generate_embedding
-from app.rag.vector_store import create_vector_store, search_documents
-from app.rag.generator import create_llm_client, generate_answer
+from app.rag.vector_store import (
+    create_vector_store,
+    search_documents,
+)
+
+from app.rag.generator import (
+    create_llm_client,
+    generate_answer,
+)
 
 
 def retrieve_context(
@@ -11,12 +20,19 @@ def retrieve_context(
     embedding_model,
     top_k: int = 3,
 ) -> tuple[str, list[dict]]:
-    """Retrieve the most relevant repository chunks for a question."""
+    """Retrieve relevant repository chunks for a question."""
 
     query_embedding = generate_embedding(
         question,
         embedding_model,
     )
+
+    document_count = collection.count()
+
+    if document_count == 0:
+        return "", []
+
+    top_k = min(top_k, document_count)
 
     results = search_documents(
         collection,
@@ -24,17 +40,40 @@ def retrieve_context(
         top_k=top_k,
     )
 
-    documents = results["documents"][0]
-    metadatas = results["metadatas"][0]
+    documents = results.get("documents", [[]])[0]
+    metadatas = results.get("metadatas", [[]])[0]
+
+    if not documents:
+        return "", []
 
     context_parts = []
 
-    for document, metadata in zip(documents, metadatas):
-        source = metadata.get("source", "Unknown file")
+    for index, (document, metadata) in enumerate(
+        zip(documents, metadatas),
+        start=1,
+    ):
+        source = metadata.get(
+            "source",
+            "Unknown file",
+        )
+
+        file_type = metadata.get(
+            "file_type",
+            "unknown",
+        )
+
+        chunk_index = metadata.get(
+            "chunk_index",
+            0,
+        )
 
         context_parts.append(
+            f"[Source {index}]\n"
             f"File: {source}\n"
-            f"Content:\n{document}"
+            f"Type: {file_type}\n"
+            f"Chunk: {chunk_index}\n"
+            f"Content:\n"
+            f"{document}"
         )
 
     context = "\n\n---\n\n".join(context_parts)
@@ -53,6 +92,14 @@ def ask_repository(
         persist_directory=vector_store_path
     )
 
+    # Make sure a repository has been indexed.
+    if collection.count() == 0:
+        return (
+            "No repository has been indexed yet. "
+            "Please index a GitHub repository first.",
+            [],
+        )
+
     embedding_model = load_embedding_model()
 
     context, sources = retrieve_context(
@@ -62,6 +109,13 @@ def ask_repository(
         top_k=top_k,
     )
 
+    if not context:
+        return (
+            "I couldn't find enough information "
+            "in the repository context.",
+            [],
+        )
+
     llm_client = create_llm_client()
 
     answer = generate_answer(
@@ -69,5 +123,14 @@ def ask_repository(
         context=context,
         client=llm_client,
     )
+
+    # Do not display sources when the answer is unsupported.
+    unsupported_message = (
+        "I couldn't find enough information "
+        "in the repository context."
+    )
+
+    if unsupported_message in answer:
+        return answer, []
 
     return answer, sources

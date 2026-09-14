@@ -1,6 +1,6 @@
 from pathlib import Path
 
-#This is our allowlist.
+
 SUPPORTED_EXTENSIONS = {
     ".py",
     ".js",
@@ -17,14 +17,18 @@ SUPPORTED_EXTENSIONS = {
     ".toml",
 }
 
+
 SUPPORTED_FILENAMES = {
     "requirements.txt",
     "package.json",
+    "pyproject.toml",
+    "setup.py",
+    "setup.cfg",
     "README",
     "README.md",
 }
 
-#Ignored directories that we don't want to process.
+
 IGNORED_DIRECTORIES = {
     ".git",
     ".venv",
@@ -40,8 +44,6 @@ IGNORED_DIRECTORIES = {
 
 
 def is_supported_file(file_path: Path) -> bool:
-    """Check whether a file should be included in the RAG pipeline."""
-
     if file_path.name in SUPPORTED_FILENAMES:
         return True
 
@@ -52,8 +54,6 @@ def is_inside_ignored_directory(
     file_path: Path,
     repository_path: Path,
 ) -> bool:
-    """Check whether a file is inside an ignored directory."""
-
     relative_path = file_path.relative_to(repository_path)
 
     return any(
@@ -66,8 +66,6 @@ def filter_repository_files(
     files: list[Path],
     repository_path: Path,
 ) -> list[Path]:
-    """Return only files relevant to the RAG pipeline."""
-
     filtered_files = []
 
     for file_path in files:
@@ -90,7 +88,6 @@ def display_filtered_files(
     files: list[Path],
     repository_path: Path,
 ) -> None:
-    """Display the files selected for RAG processing."""
 
     print("\nSelected Files")
     print("--------------")

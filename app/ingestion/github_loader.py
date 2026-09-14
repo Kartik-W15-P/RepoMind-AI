@@ -5,6 +5,7 @@ import subprocess
 from pathlib import Path
 from urllib.parse import urlparse
 
+from app.ingestion.file_reader import read_repository_files
 from app.ingestion.file_filter import filter_repository_files
 
 
@@ -76,12 +77,17 @@ def get_repository_files(repository_path: Path) -> list[Path]:
 
 
 def inspect_repository(repository_path: Path) -> None:
-    """Display basic information about the repository."""
+    """Display repository information and read selected files."""
 
     all_files = get_repository_files(repository_path)
 
     selected_files = filter_repository_files(
         all_files,
+        repository_path,
+    )
+
+    documents = read_repository_files(
+        selected_files,
         repository_path,
     )
 
@@ -92,12 +98,22 @@ def inspect_repository(repository_path: Path) -> None:
     print(f"Total files:    {len(all_files)}")
     print(f"Selected files: {len(selected_files)}")
     print(f"Ignored files:  {len(all_files) - len(selected_files)}")
+    print(f"Read documents: {len(documents)}")
 
     print("\nSelected Files:")
 
-    for file_path in selected_files:
-        relative_path = file_path.relative_to(repository_path)
-        print(f"  ✓ {relative_path}")
+    for document in documents:
+        print(f"  ✓ {document['metadata']['source']}")
+
+    print("\nFirst Document Preview:")
+
+    if documents:
+        first_document = documents[0]
+
+        print(f"Source: {first_document['metadata']['source']}")
+        print("-" * 40)
+        print(first_document["content"][:300])
+        print("-" * 40)
 
 
 if __name__ == "__main__":

@@ -9,33 +9,36 @@ from app.rag.embeddings import (
     load_embedding_model,
     generate_embeddings,
 )
+
 from app.rag.vector_store import (
     create_vector_store,
+    reset_vector_store,
     add_documents,
 )
 
 
-def index_repository(
-    repository_path: Path,
-) -> dict:
+def index_repository(repository_path: Path) -> dict:
     """Index a repository into ChromaDB."""
 
-    # 1. Get all repository files
+    # Clear the previous repository
+    reset_vector_store()
+
+    # Find repository files
     all_files = get_repository_files(repository_path)
 
-    # 2. Keep only relevant files
+    # Keep only useful files
     selected_files = filter_repository_files(
         all_files,
         repository_path,
     )
 
-    # 3. Read selected files
+    # Read selected files
     documents = read_repository_files(
         selected_files,
         repository_path,
     )
 
-    # 4. Split documents into chunks
+    # Split documents into chunks
     chunks = chunk_documents(documents)
 
     if not chunks:
@@ -43,10 +46,9 @@ def index_repository(
             "No readable content found in the repository."
         )
 
-    # 5. Load embedding model
+    # Generate embeddings
     model = load_embedding_model()
 
-    # 6. Generate embeddings
     texts = [
         chunk["content"]
         for chunk in chunks
@@ -57,10 +59,10 @@ def index_repository(
         model,
     )
 
-    # 7. Create ChromaDB collection
+    # Create fresh vector store
     collection = create_vector_store()
 
-    # 8. Store chunks + embeddings
+    # Store chunks
     add_documents(
         collection,
         chunks,

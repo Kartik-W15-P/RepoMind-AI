@@ -4,20 +4,21 @@ import chromadb
 COLLECTION_NAME = "repomind_documents"
 
 
-def create_vector_store(
-    persist_directory: str = "chroma_db",
-):
-    # Create a persistent ChromaDB client and collection.
-
-    client = chromadb.PersistentClient(
-        path=persist_directory
-    )
-
-    collection = client.get_or_create_collection(
-        name=COLLECTION_NAME
-    )
-
+def create_vector_store(persist_directory: str = "chroma_db"):
+    """Create a persistent ChromaDB client and collection."""
+    client = chromadb.PersistentClient(path=persist_directory)
+    collection = client.get_or_create_collection(name=COLLECTION_NAME)
     return collection
+
+
+def reset_vector_store(persist_directory: str = "chroma_db") -> None:
+    """Delete the existing collection so only one repository is active."""
+    client = chromadb.PersistentClient(path=persist_directory)
+
+    try:
+        client.delete_collection(name=COLLECTION_NAME)
+    except Exception:
+        pass
 
 
 def add_documents(
@@ -25,7 +26,7 @@ def add_documents(
     chunks: list[dict],
     embeddings: list[list[float]],
 ) -> None:
-    # Store document chunks, embeddings, and metadata in ChromaDB.
+    """Add repository chunks and embeddings to ChromaDB."""
 
     ids = []
     documents = []
@@ -51,7 +52,7 @@ def search_documents(
     query_embedding: list[float],
     top_k: int = 3,
 ):
-    # Search ChromaDB for the most relevant document chunks.
+    """Search for the most relevant repository chunks."""
 
     results = collection.query(
         query_embeddings=[query_embedding],

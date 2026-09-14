@@ -3,8 +3,7 @@ from pathlib import Path
 from app.rag.pipeline import index_repository
 from app.rag.rag_pipeline import ask_repository
 
-
-repository_path = Path("data/repositories/RepoMind-AI")
+repository_path = Path("data/repositories/requests")
 
 print("Indexing repository...\n")
 
@@ -16,7 +15,7 @@ print(result)
 print("\nAsking question...\n")
 
 answer, sources = ask_repository(
-    "What is the application called?"
+    "What database does this project use?"
 )
 
 print("Answer:")

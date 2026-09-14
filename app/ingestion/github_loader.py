@@ -1,6 +1,11 @@
 import subprocess #Python needs to communicate with the operating system.
 from pathlib import Path #Path gives us a clean way to work with folders and files.
 from urllib.parse import urlparse #Help to examine the GitHub URL.
+import subprocess
+from pathlib import Path
+from urllib.parse import urlparse
+
+from app.ingestion.file_filter import filter_repository_files
 
 
 def validate_github_url(repo_url: str) -> bool:
@@ -73,19 +78,26 @@ def get_repository_files(repository_path: Path) -> list[Path]:
 def inspect_repository(repository_path: Path) -> None:
     """Display basic information about the repository."""
 
-    files = get_repository_files(repository_path)
+    all_files = get_repository_files(repository_path)
+
+    selected_files = filter_repository_files(
+        all_files,
+        repository_path,
+    )
 
     print("\nRepository Information")
     print("----------------------")
-    print(f"Repository: {repository_path.name}")
-    print(f"Location:   {repository_path}")
-    print(f"Total files: {len(files)}")
+    print(f"Repository:     {repository_path.name}")
+    print(f"Location:       {repository_path}")
+    print(f"Total files:    {len(all_files)}")
+    print(f"Selected files: {len(selected_files)}")
+    print(f"Ignored files:  {len(all_files) - len(selected_files)}")
 
-    print("\nFiles:")
+    print("\nSelected Files:")
 
-    for file in files:
-        relative_path = file.relative_to(repository_path)
-        print(f"  - {relative_path}")
+    for file_path in selected_files:
+        relative_path = file_path.relative_to(repository_path)
+        print(f"  ✓ {relative_path}")
 
 
 if __name__ == "__main__":
